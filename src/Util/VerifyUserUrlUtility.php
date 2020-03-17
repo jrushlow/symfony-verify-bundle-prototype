@@ -67,8 +67,8 @@ class VerifyUserUrlUtility
     {
         $user = $components->getUser();
 
-        if (null !== $user && null !== $components->getPass()) {
-            $user .= ':'.$components->getPass();
+        if (null !== $user && null !== ($pass = $components->getPass())) {
+            $user .= ':'.$pass;
         }
 
         if (null !== $user) {
