@@ -12,10 +12,22 @@ namespace SymfonyCasts\Bundle\VerifyUser\Tests\UnitTests\Util;
 use PHPUnit\Framework\TestCase;
 use SymfonyCasts\Bundle\VerifyUser\Collection\VerifyUserQueryParamCollection;
 use SymfonyCasts\Bundle\VerifyUser\Model\VerifyUserQueryParam;
+use SymfonyCasts\Bundle\VerifyUser\Model\VerifyUserUrlComponents;
 use SymfonyCasts\Bundle\VerifyUser\Util\VerifyUserQueryUtility;
+use SymfonyCasts\Bundle\VerifyUser\Util\VerifyUserUrlUtility;
 
 class VerifyUserQueryTest extends TestCase
 {
+    /**
+     * @var \PHPUnit\Framework\MockObject\MockObject|VerifyUserUrlUtility
+     */
+    private $mockUrlUtility;
+
+    protected function setUp(): void
+    {
+        $this->mockUrlUtility = $this->createMock(VerifyUserUrlUtility::class);
+    }
+
     public function testRemovesParamsFromQueryString(): void
     {
         $params = ['a' => 'foo', 'b' => 'bar', 'c' => 'baz'];
@@ -31,12 +43,27 @@ class VerifyUserQueryTest extends TestCase
         $path = '/verify?';
         $uri = $path.\http_build_query($params);
 
-        $queryUtility = new VerifyUserQueryUtility();
+        $components = new VerifyUserUrlComponents();
+        $components->setPath('/verify');
 
-        $result = $queryUtility->removeQueryParam($collection, $uri);
-        $expected = $path.\http_build_query(['b' => 'bar']);
+        $this->mockUrlUtility
+            ->expects($this->once())
+            ->method('parseUrl')
+            ->with($uri)
+            ->willReturn($components)
+        ;
 
-        self::assertSame($expected, $result);
+        $components->setQuery('b=bar');
+
+        $this->mockUrlUtility
+            ->expects($this->once())
+            ->method('buildUrl')
+            ->with($components)
+        ;
+
+        $queryUtility = new VerifyUserQueryUtility($this->mockUrlUtility);
+
+        $queryUtility->removeQueryParam($collection, $uri);
     }
 
     public function testAddsQueryParamsToUri(): void
@@ -56,7 +83,7 @@ class VerifyUserQueryTest extends TestCase
         $collection->offsetUnset(1);
         $uri = $path.\http_build_query([$exists->getKey() => $exists->getValue()]);
 
-        $queryUtil = new VerifyUserQueryUtility();
+        $queryUtil = new VerifyUserQueryUtility($this->mockUrlUtility);
         $result = $queryUtil->addQueryParams($collection, $uri);
 
         self::assertSame($expected, $result);
@@ -66,7 +93,7 @@ class VerifyUserQueryTest extends TestCase
     {
         $uri = '/?a=x&expires=1234567890';
 
-        $queryUtility = new VerifyUserQueryUtility();
+        $queryUtility = new VerifyUserQueryUtility($this->mockUrlUtility);
         $result = $queryUtility->getExpiryTimeStamp($uri);
 
         self::assertSame(

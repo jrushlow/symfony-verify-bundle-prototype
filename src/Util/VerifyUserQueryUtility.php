@@ -21,11 +21,24 @@ use SymfonyCasts\Bundle\VerifyUser\Collection\VerifyUserQueryParamCollection;
  */
 class VerifyUserQueryUtility
 {
+    private $urlUtility;
+
+    public function __construct(VerifyUserUrlUtility $urlUtility)
+    {
+        $this->urlUtility = $urlUtility;
+    }
+
     //@TODO remove/add method handle full uri? hmm [scheme] etc.. hmmm let me think
     public function removeQueryParam(VerifyUserQueryParamCollection $collection, string $uri): string
     {
-        $parsedUri = \parse_url($uri);
-        \parse_str($parsedUri['query'], $params);
+        $urlComponents = $this->urlUtility->parseUrl($uri);
+        $params = [];
+
+        $q = $urlComponents->getQuery();
+
+        if (null !== $q) {
+            \parse_str($q, $params);
+        }
 
         foreach ($collection as $queryParam) {
             if (isset($params[$queryParam->getKey()])) {
@@ -33,7 +46,9 @@ class VerifyUserQueryUtility
             }
         }
 
-        return $parsedUri['path'].'?'.$this->getSortedQueryString($params);
+        $urlComponents->setQuery($this->getSortedQueryString($params));
+
+        return $this->urlUtility->buildUrl($urlComponents);
     }
 
     public function addQueryParams(VerifyUserQueryParamCollection $collection, string $uri): string
