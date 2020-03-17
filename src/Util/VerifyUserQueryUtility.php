@@ -28,15 +28,12 @@ class VerifyUserQueryUtility
         $this->urlUtility = $urlUtility;
     }
 
-    //@TODO remove/add method handle full uri? hmm [scheme] etc.. hmmm let me think
     public function removeQueryParam(VerifyUserQueryParamCollection $collection, string $uri): string
     {
         $urlComponents = $this->urlUtility->parseUrl($uri);
         $params = [];
 
-        $q = $urlComponents->getQuery();
-
-        if (null !== $q) {
+        if (null !== ($q = $urlComponents->getQuery())) {
             \parse_str($q, $params);
         }
 
@@ -53,28 +50,31 @@ class VerifyUserQueryUtility
 
     public function addQueryParams(VerifyUserQueryParamCollection $collection, string $uri): string
     {
-        $parsedUri = \parse_url($uri);
+        $urlComponents = $this->urlUtility->parseUrl($uri);
         $params = [];
-        if (isset($parsedUri['query'])) {
-            \parse_str($parsedUri['query'], $params);
+
+        if (null !== ($q = $urlComponents->getQuery())) {
+            \parse_str($q, $params);
         }
 
         foreach ($collection as $queryParam) {
             $params[$queryParam->getKey()] = $queryParam->getValue();
         }
 
-        return $parsedUri['path'].'?'.$this->getSortedQueryString($params);
+        $urlComponents->setQuery($this->getSortedQueryString($params));
+
+        return $this->urlUtility->buildUrl($urlComponents);
     }
 
     public function getExpiryTimeStamp(string $uri): int
     {
-        $parsedUri = \parse_url($uri);
+        $queryStr = ($this->urlUtility->parseUrl($uri))->getQuery();
 
-        if (!isset($parsedUri['query'])) {
+        if (null === $queryStr) {
             return 0;
         }
 
-        \parse_str($parsedUri['query'], $params);
+        \parse_str($queryStr, $params);
 
         return (int) $params['expires'];
     }

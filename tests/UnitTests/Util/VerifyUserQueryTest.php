@@ -40,7 +40,7 @@ class VerifyUserQueryTest extends TestCase
 
         $collection->offsetUnset(1);
 
-        $path = '/verify?';
+        $path = '/verify';
         $uri = $path.\http_build_query($params);
 
         $components = new VerifyUserUrlComponents();
@@ -68,30 +68,51 @@ class VerifyUserQueryTest extends TestCase
 
     public function testAddsQueryParamsToUri(): void
     {
-        $params = ['a' => 'foo', 'b' => 'bar', 'c' => 'baz'];
+        $url = '/verify?a=foo&c=baz';
+        $queryParam = [['a' => 'foo', 'c' => 'baz']];
 
-        $path = '/verify?';
-        $expected = $path.\http_build_query($params);
+        $components = new VerifyUserUrlComponents();
+        $components->setPath('/verify');
+        $components->setQuery(\http_build_query($queryParam));
+
+        $this->mockUrlUtility
+            ->expects($this->once())
+            ->method('parseUrl')
+            ->with($url)
+            ->willReturn($components)
+        ;
+
+        $queryParam['b'] = 'bar';
+
+        $components->setQuery(\ksort($queryParam));
+
+        $this->mockUrlUtility
+            ->expects($this->once())
+            ->method('buildUrl')
+            ->with($components)
+        ;
 
         $collection = new VerifyUserQueryParamCollection();
-
-        foreach ($params as $key => $value) {
-            $collection->add(new VerifyUserQueryParam($key, $value));
-        }
-
-        $exists = $collection[1];
-        $collection->offsetUnset(1);
-        $uri = $path.\http_build_query([$exists->getKey() => $exists->getValue()]);
+        $collection->createParam('b', 'bar');
 
         $queryUtil = new VerifyUserQueryUtility($this->mockUrlUtility);
-        $result = $queryUtil->addQueryParams($collection, $uri);
-
-        self::assertSame($expected, $result);
+        $queryUtil->addQueryParams($collection, $url);
     }
 
     public function testGetsExpiryTimeFromQueryString(): void
     {
         $uri = '/?a=x&expires=1234567890';
+
+        $components = new VerifyUserUrlComponents();
+        $components->setPath('/');
+        $components->setQuery('a=x&expires=1234567890');
+
+        $this->mockUrlUtility
+            ->expects($this->once())
+            ->method('parseUrl')
+            ->with($uri)
+            ->willReturn($components)
+        ;
 
         $queryUtility = new VerifyUserQueryUtility($this->mockUrlUtility);
         $result = $queryUtility->getExpiryTimeStamp($uri);
