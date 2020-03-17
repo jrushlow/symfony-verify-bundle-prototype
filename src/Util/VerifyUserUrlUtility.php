@@ -36,15 +36,7 @@ class VerifyUserUrlUtility
         $url = '';
 
         // Handle user first as it may have a password associated with it.
-        //@todo WIP
-        if ($components->getUser()) {
-            $credentials = $components->getUser();
-            if ($components->getPass()) {
-                $credentials .= ':'.$components->getPass();
-            }
-
-            $components->setUser($credentials.'@');
-        }
+        $components = $this->formatCredentials($components);
 
         // Add components in order to the url string
         foreach ($componentOrder as $component => $separator) {
@@ -69,5 +61,20 @@ class VerifyUserUrlUtility
         }
 
         return $url;
+    }
+
+    private function formatCredentials(VerifyUserUrlComponents $components): VerifyUserUrlComponents
+    {
+        $user = $components->getUser();
+
+        if (null !== $user && null !== $components->getPass()) {
+            $user .= ':'.$components->getPass();
+        }
+
+        if (null !== $user) {
+            $components->setUser($user.'@');
+        }
+
+        return $components;
     }
 }
