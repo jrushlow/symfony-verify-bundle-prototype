@@ -22,6 +22,7 @@ class VerifyUserUrlUtility
 
     public function buildUrl(VerifyUserUrlComponents $components): string
     {
+        // Order in which components must appear in a url with their separator
         $componentOrder = [
             'Scheme' => '://',
             'User' => null,
@@ -34,6 +35,8 @@ class VerifyUserUrlUtility
 
         $url = '';
 
+        // Handle user first as it may have a password associated with it.
+        //@todo WIP
         if ($components->getUser()) {
             $credentials = $components->getUser();
             if ($components->getPass()) {
@@ -43,6 +46,7 @@ class VerifyUserUrlUtility
             $components->setUser($credentials.'@');
         }
 
+        // Add components in order to the url string
         foreach ($componentOrder as $component => $separator) {
             $getter = 'get'.$component;
             $value = $components->$getter();
