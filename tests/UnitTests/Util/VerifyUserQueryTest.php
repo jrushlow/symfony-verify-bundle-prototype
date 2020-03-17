@@ -61,4 +61,17 @@ class VerifyUserQueryTest extends TestCase
 
         self::assertSame($expected, $result);
     }
+
+    public function testGetsExpiryTimeFromQueryString(): void
+    {
+        $uri = '/?a=x&expires=1234567890';
+
+        $queryUtility = new VerifyUserQueryUtility();
+        $result = $queryUtility->getExpiryTimeStamp($uri);
+
+        self::assertSame(
+            1234567890,
+            $result
+        );
+    }
 }
